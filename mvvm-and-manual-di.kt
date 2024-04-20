@@ -1,6 +1,8 @@
 // Group 11 : example of MVVM + flows
 // Group 14 : example dependency injection w/ database
 
+// NOTE: same as before, this time using Hilt
+
 // data layer -> User.kt
 data class User(val name: String, val age: Int)
 
@@ -43,6 +45,17 @@ class NetworkDatabase: IDatabase {
 This screen will be called the "OverviewScreen", associated
 to "OverviewViewModel" and based on "OverviewState" */
 
+// generally placed in a folder called di
+@Module
+@InstallIn(SingletonComponent::class) // lifetime of the dependency
+object AppModule {
+    @Provides
+    @Singleton // scope => single instance
+    fun provideDatabase(): IDatabase {
+        return NetworkDatabase()
+    }
+}
+
 // presentation layer : model
 data class OverviewState(
     val users: List<User> = emptyList(),
@@ -50,7 +63,8 @@ data class OverviewState(
 )
 
 // presentation layer : view model
-class OverviewViewModel(
+@HiltViewModel
+class OverviewViewModel @Inject constructor(
     private val db: IDatabase
 ): Viewmodel() {
     private val _state = MutableStateFlow(OverviewState())
@@ -97,9 +111,9 @@ fun OverviewScreen(
 }
 
 // using the view (e.g. in MainActivity.kt > in NavHost)
-val db = NetworkDatabase.getInstance // singleton pattern
 composable(Destinations.OVERVIEW) {
-    val vm = viewModel { OverviewViewModel(db) }
+    // Notice that you don't need to pass the db
+    val vm = hiltViewModel<OverviewViewModel>()
     val state by vm.state.collectAsStateWithLifecycle()
 
     OverviewScreen(state, vm::onButtonClick)
